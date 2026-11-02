@@ -17,6 +17,22 @@ from .const import (
     PATH_SCHEDULE,
 )
 
+def boost_active(zone: dict) -> bool:
+    """Return True if a zone's status shows a boost running.
+
+    Climote's current get-status format has per-zone ``burner``, ``hold`` and ``boost``
+    fields (``boost`` is "00" when no boost is running). The older format had a
+    ``status`` field instead, where "5" meant boost and "1" meant heating on schedule.
+    """
+    if zone.get("status") in ("5", "1"):
+        return True
+    boost = zone.get("boost")
+    try:
+        return boost is not None and int(str(boost)) > 0
+    except ValueError:
+        return False
+
+
 class ClimoteConnectionError(Exception):
     """Exception raised when connection to Climote fails."""
     pass

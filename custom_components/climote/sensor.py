@@ -154,5 +154,5 @@ class ClimoteLastUpdatedSensor(CoordinatorEntity[ClimoteDataUpdateCoordinator], 
     def native_value(self) -> datetime | None:
         """Return the timestamp of the last successful coordinator update."""
         if self.coordinator.last_update_success:
-            return self.coordinator.last_update_success_time
+            return self.coordinator.last_success_time
         return None

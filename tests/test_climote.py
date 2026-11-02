@@ -14,6 +14,7 @@ sys.modules['homeassistant'] = MagicMock()
 sys.modules['homeassistant.config_entries'] = MagicMock()
 sys.modules['homeassistant.const'] = MagicMock()
 sys.modules['homeassistant.core'] = MagicMock()
+sys.modules['homeassistant.util'] = MagicMock()
 sys.modules['homeassistant.helpers'] = MagicMock()
 sys.modules['homeassistant.helpers.update_coordinator'] = MagicMock()
 sys.modules['homeassistant.helpers.entity_platform'] = MagicMock()
@@ -28,6 +29,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 from custom_components.climote.api import (
     ClimoteAPI,
+    boost_active,
     ClimoteAuthError,
     ClimoteConnectionError,
 )
@@ -164,3 +166,24 @@ async def test_set_boost_success():
         result = await api.set_boost(zone_id=1, duration_hours=1.0)
 
     assert result is True
+
+
+# Real cached get-status zones (Nov 2026 format: burner/hold/boost, no "status")
+@pytest.mark.parametrize(
+    "zone, expected",
+    [
+        ({"burner": 1, "hold": "00", "boost": "00", "temperature": "00", "thermostat": 0}, False),
+        ({"burner": 4, "hold": "00", "boost": "00", "temperature": "00", "thermostat": 0}, False),
+        ({"burner": 1, "hold": "00", "boost": "01", "temperature": "00", "thermostat": 0}, True),
+        ({"burner": 1, "hold": "00", "boost": "30", "temperature": "00", "thermostat": 0}, True),
+        ({"burner": 0, "status": "5", "temperature": "0", "thermostat": 0}, True),   # older format: boost
+        ({"burner": 0, "status": "1", "temperature": "0", "thermostat": 0}, True),   # older format: schedule
+        ({"burner": 0, "status": "0", "temperature": "0", "thermostat": 0}, False),
+        ({"burner": 0, "status": None}, False),
+        ({"boost": "xx"}, False),
+        ({}, False),
+    ],
+)
+def test_boost_active(zone, expected):
+    assert boost_active(zone) is expected
+

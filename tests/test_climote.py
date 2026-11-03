@@ -31,6 +31,7 @@ from custom_components.climote.api import (
     ClimoteAPI,
     boost_active,
     boost_minutes,
+    heating_source,
     zone_heating,
     ClimoteAuthError,
     ClimoteConnectionError,
@@ -174,6 +175,7 @@ async def test_set_boost_success():
 IDLE = {"burner": 1, "hold": "00", "boost": "00", "temperature": "00", "thermostat": 0}
 DISABLED = {"burner": 4, "hold": "00", "boost": "00", "temperature": "00", "thermostat": 0}
 BOOSTING = {"burner": 1, "status": 5, "boost": 15, "hold": "00", "temperature": "00", "thermostat": 0}
+SCHEDULED = {"burner": 2, "temperature": "00", "thermostat": 0}   # during a scheduled slot
 
 
 @pytest.mark.parametrize(
@@ -182,7 +184,9 @@ BOOSTING = {"burner": 1, "status": 5, "boost": 15, "hold": "00", "temperature": 
         (IDLE, 0, False, False),
         (DISABLED, 0, False, False),
         (BOOSTING, 15, True, True),
-        ({**IDLE, "status": 1}, 0, False, True),                 # on schedule
+        (SCHEDULED, 0, False, True),
+        ({**BOOSTING, "boost": None}, 0, True, True),             # seen mid-boost: status 5, no boost field
+        ({**IDLE, "status": 1}, 0, False, True),                 # older replies: on schedule
         ({"burner": 0, "status": "5", "boost": "00"}, 0, True, True),   # older replies: status as a string
         ({"burner": 0, "status": "1"}, 0, False, True),
         ({"burner": 0, "status": "0"}, 0, False, False),
@@ -196,4 +200,14 @@ def test_zone_status_helpers(zone, minutes, boosting, heating):
     assert boost_minutes(zone) == minutes
     assert boost_active(zone) is boosting
     assert zone_heating(zone) is heating
+
+
+@pytest.mark.parametrize(
+    "zone, source",
+    [(IDLE, None), (DISABLED, None), (BOOSTING, "boost"), (SCHEDULED, "schedule"),
+     ({**SCHEDULED, "status": 5, "boost": 30}, "boost"),   # a boost during a scheduled slot counts as boost
+     ({"status": "1"}, "schedule"), ({}, None)],
+)
+def test_heating_source(zone, source):
+    assert heating_source(zone) == source
 

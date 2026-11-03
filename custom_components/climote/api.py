@@ -18,8 +18,8 @@ from .const import (
 )
 
 # Per-zone get-status fields, as returned in Nov 2026:
-#   burner: 1 = zone enabled, 4 = zone disabled (it does not change while heating)
-#   status: only present while the zone is on: 5 = boost, 1 = on schedule (an int, or "5"/"1" in older replies)
+#   burner: 1 = enabled and idle, 2 = on by its schedule, 4 = zone disabled (stays 1 during a boost)
+#   status: only present during a boost: 5 (an int; "5", or "1" for schedule, in older replies)
 #   boost:  minutes of boost left (an int), or "00" when no boost is running
 #   hold, temperature, thermostat: "00" / 0 when unused (no wireless thermostat)
 
@@ -37,9 +37,18 @@ def boost_active(zone: dict) -> bool:
     return str(zone.get("status")) == "5" or boost_minutes(zone) > 0
 
 
+def heating_source(zone: dict) -> str | None:
+    """Return "boost" or "schedule" if the zone is on, else None."""
+    if boost_active(zone):
+        return "boost"
+    if str(zone.get("burner")) == "2" or str(zone.get("status")) == "1":
+        return "schedule"
+    return None
+
+
 def zone_heating(zone: dict) -> bool:
     """Return True if the zone is on, by boost or by its schedule."""
-    return boost_active(zone) or str(zone.get("status")) == "1"
+    return heating_source(zone) is not None
 
 
 class ClimoteConnectionError(Exception):

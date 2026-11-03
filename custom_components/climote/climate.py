@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .api import zone_heating
+from .api import heating_source, zone_heating
 from .const import DOMAIN, LOGGER, DEFAULT_BOOST_DURATION
 from .coordinator import ClimoteDataUpdateCoordinator
 
@@ -131,6 +131,7 @@ class ClimoteZoneClimate(CoordinatorEntity[ClimoteDataUpdateCoordinator], Climat
         """Expose the zone's raw status fields (their codes aren't documented by Climote)."""
         zone = self._zone_data
         return {
+            "heating_source": heating_source(zone),
             "status": zone.get("status"),
             "burner": zone.get("burner"),
             "hold": zone.get("hold"),

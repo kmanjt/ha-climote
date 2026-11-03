@@ -37,7 +37,6 @@ class ClimoteZoneClimate(CoordinatorEntity[ClimoteDataUpdateCoordinator], Climat
 
     _attr_has_entity_name = True
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
-    _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
 
     def __init__(
         self,
@@ -58,7 +57,7 @@ class ClimoteZoneClimate(CoordinatorEntity[ClimoteDataUpdateCoordinator], Climat
         # Set up device info to group all entities under one Climote device
         self._attr_device_info = {
             "identifiers": {(DOMAIN, email)},
-            "name": f"Climote Heating ({entry.title})",
+            "name": "Climote",
             "manufacturer": "Climote",
             "model": "Climote GSM Hub",
         }
@@ -102,6 +101,18 @@ class ClimoteZoneClimate(CoordinatorEntity[ClimoteDataUpdateCoordinator], Climat
         if boost_active(self._zone_data):
             return HVACMode.HEAT
         return HVACMode.OFF
+
+    @property
+    def supported_features(self) -> ClimateEntityFeature:
+        """On/off (boost) for every zone; a target temperature only where the zone has a thermostat.
+
+        Zones without one report thermostat 0, so a temperature control would show no
+        value, and changing it would silently start a boost.
+        """
+        features = ClimateEntityFeature.TURN_ON | ClimateEntityFeature.TURN_OFF
+        if self.target_temperature is not None:
+            features |= ClimateEntityFeature.TARGET_TEMPERATURE
+        return features
 
     @property
     def hvac_modes(self) -> list[HVACMode]:

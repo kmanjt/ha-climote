@@ -49,7 +49,7 @@ class ClimoteZoneBoostSwitch(CoordinatorEntity[ClimoteDataUpdateCoordinator], Sw
 
         self._attr_device_info = {
             "identifiers": {(DOMAIN, email)},
-            "name": f"Climote Heating ({entry.title})",
+            "name": "Climote",
             "manufacturer": "Climote",
             "model": "Climote GSM Hub",
         }

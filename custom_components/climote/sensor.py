@@ -50,7 +50,7 @@ class ClimoteSensorBase(CoordinatorEntity[ClimoteDataUpdateCoordinator], SensorE
 
         self._attr_device_info = {
             "identifiers": {(DOMAIN, self.email)},
-            "name": f"Climote Heating ({entry.title})",
+            "name": "Climote",
             "manufacturer": "Climote",
             "model": "Climote GSM Hub",
         }
@@ -145,7 +145,7 @@ class ClimoteLastUpdatedSensor(CoordinatorEntity[ClimoteDataUpdateCoordinator], 
 
         self._attr_device_info = {
             "identifiers": {(DOMAIN, email)},
-            "name": f"Climote Heating ({entry.title})",
+            "name": "Climote",
             "manufacturer": "Climote",
             "model": "Climote GSM Hub",
         }

@@ -30,6 +30,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 from custom_components.climote.api import (
     ClimoteAPI,
     boost_active,
+    boost_minutes,
+    zone_heating,
     ClimoteAuthError,
     ClimoteConnectionError,
 )
@@ -168,22 +170,30 @@ async def test_set_boost_success():
     assert result is True
 
 
-# Real cached get-status zones (Nov 2026 format: burner/hold/boost, no "status")
+# Real cached get-status zones (Nov 2026 format), captured from a live hub
+IDLE = {"burner": 1, "hold": "00", "boost": "00", "temperature": "00", "thermostat": 0}
+DISABLED = {"burner": 4, "hold": "00", "boost": "00", "temperature": "00", "thermostat": 0}
+BOOSTING = {"burner": 1, "status": 5, "boost": 15, "hold": "00", "temperature": "00", "thermostat": 0}
+
+
 @pytest.mark.parametrize(
-    "zone, expected",
+    "zone, minutes, boosting, heating",
     [
-        ({"burner": 1, "hold": "00", "boost": "00", "temperature": "00", "thermostat": 0}, False),
-        ({"burner": 4, "hold": "00", "boost": "00", "temperature": "00", "thermostat": 0}, False),
-        ({"burner": 1, "hold": "00", "boost": "01", "temperature": "00", "thermostat": 0}, True),
-        ({"burner": 1, "hold": "00", "boost": "30", "temperature": "00", "thermostat": 0}, True),
-        ({"burner": 0, "status": "5", "temperature": "0", "thermostat": 0}, True),   # older format: boost
-        ({"burner": 0, "status": "1", "temperature": "0", "thermostat": 0}, True),   # older format: schedule
-        ({"burner": 0, "status": "0", "temperature": "0", "thermostat": 0}, False),
-        ({"burner": 0, "status": None}, False),
-        ({"boost": "xx"}, False),
-        ({}, False),
+        (IDLE, 0, False, False),
+        (DISABLED, 0, False, False),
+        (BOOSTING, 15, True, True),
+        ({**IDLE, "status": 1}, 0, False, True),                 # on schedule
+        ({"burner": 0, "status": "5", "boost": "00"}, 0, True, True),   # older replies: status as a string
+        ({"burner": 0, "status": "1"}, 0, False, True),
+        ({"burner": 0, "status": "0"}, 0, False, False),
+        ({"burner": 0, "status": None}, 0, False, False),
+        ({"boost": "xx"}, 0, False, False),
+        ({"boost": "30"}, 30, True, True),
+        ({}, 0, False, False),
     ],
 )
-def test_boost_active(zone, expected):
-    assert boost_active(zone) is expected
+def test_zone_status_helpers(zone, minutes, boosting, heating):
+    assert boost_minutes(zone) == minutes
+    assert boost_active(zone) is boosting
+    assert zone_heating(zone) is heating
 

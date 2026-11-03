@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .api import boost_active
+from .api import zone_heating
 from .const import DOMAIN, LOGGER, DEFAULT_BOOST_DURATION
 from .coordinator import ClimoteDataUpdateCoordinator
 
@@ -98,7 +98,7 @@ class ClimoteZoneClimate(CoordinatorEntity[ClimoteDataUpdateCoordinator], Climat
         # status "5" = Boost is active
         # status "1" = Schedule/timer is running (heating)
         # status None or "0" = idle / off
-        if boost_active(self._zone_data):
+        if zone_heating(self._zone_data):
             return HVACMode.HEAT
         return HVACMode.OFF
 
@@ -122,7 +122,7 @@ class ClimoteZoneClimate(CoordinatorEntity[ClimoteDataUpdateCoordinator], Climat
     @property
     def hvac_action(self) -> HVACAction | None:
         """Return the current HVAC action (HEATING or IDLE)."""
-        if boost_active(self._zone_data):
+        if zone_heating(self._zone_data):
             return HVACAction.HEATING
         return HVACAction.IDLE
 
@@ -131,6 +131,7 @@ class ClimoteZoneClimate(CoordinatorEntity[ClimoteDataUpdateCoordinator], Climat
         """Expose the zone's raw status fields (their codes aren't documented by Climote)."""
         zone = self._zone_data
         return {
+            "status": zone.get("status"),
             "burner": zone.get("burner"),
             "hold": zone.get("hold"),
             "boost": zone.get("boost"),

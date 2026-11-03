@@ -6,6 +6,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .api import boost_active
 from .const import DOMAIN, LOGGER, CONF_BOOST_DURATION, DEFAULT_BOOST_DURATION
 from .coordinator import ClimoteDataUpdateCoordinator
 
@@ -63,8 +64,7 @@ class ClimoteZoneBoostSwitch(CoordinatorEntity[ClimoteDataUpdateCoordinator], Sw
     @property
     def is_on(self) -> bool:
         """Return True if boost is currently active."""
-        # "5" means Boost is active
-        return self._zone_data.get("status") == "5"
+        return boost_active(self._zone_data)
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on the boost switch."""

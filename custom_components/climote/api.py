@@ -17,20 +17,29 @@ from .const import (
     PATH_SCHEDULE,
 )
 
-def boost_active(zone: dict) -> bool:
-    """Return True if a zone's status shows a boost running.
+# Per-zone get-status fields, as returned in Nov 2026:
+#   burner: 1 = zone enabled, 4 = zone disabled (it does not change while heating)
+#   status: only present while the zone is on: 5 = boost, 1 = on schedule (an int, or "5"/"1" in older replies)
+#   boost:  minutes of boost left (an int), or "00" when no boost is running
+#   hold, temperature, thermostat: "00" / 0 when unused (no wireless thermostat)
 
-    Climote's current get-status format has per-zone ``burner``, ``hold`` and ``boost``
-    fields (``boost`` is "00" when no boost is running). The older format had a
-    ``status`` field instead, where "5" meant boost and "1" meant heating on schedule.
-    """
-    if zone.get("status") in ("5", "1"):
-        return True
-    boost = zone.get("boost")
+
+def boost_minutes(zone: dict) -> int:
+    """Return the minutes of boost left in a zone (0 when no boost is running)."""
     try:
-        return boost is not None and int(str(boost)) > 0
+        return max(0, int(str(zone.get("boost"))))
     except ValueError:
-        return False
+        return 0
+
+
+def boost_active(zone: dict) -> bool:
+    """Return True if a boost is running in the zone."""
+    return str(zone.get("status")) == "5" or boost_minutes(zone) > 0
+
+
+def zone_heating(zone: dict) -> bool:
+    """Return True if the zone is on, by boost or by its schedule."""
+    return boost_active(zone) or str(zone.get("status")) == "1"
 
 
 class ClimoteConnectionError(Exception):
